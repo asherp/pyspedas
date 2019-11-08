@@ -31,23 +31,33 @@ from pyspedas import tnames
 import re
 from pytplot import del_data
 from functools import wraps
+import decorator
+
+
+def load_wrapper(func, *args, **kwargs):
+    variables = func(*args, **kwargs)
+    if variables is None:
+        return None
+    if kwargs.get('available') or CONFIG['download_only']:
+        print('Available files:')
+    else:
+        print('Loaded variables:')
+    for var in variables:
+        print(var)
+    return variables
 
 # the following decorator prints the loaded tplot variables after each load routine call
-def print_vars(func):
-    def wrapper(*args, **kwargs):
-        variables = func(*args, **kwargs)
-        if variables is None:
-            return None
-        if kwargs.get('available') or CONFIG['download_only']:
-            print('Available files:')
-        else:
-            print('Loaded variables:')
-        for var in variables:
-            print(var)
-        return variables
-    wrapper.__name__ = func.__name__
-    wrapper.__doc__ = func.__doc__
-    return wrapper
+def print_vars(func = None):
+    def decorator_printer(f):
+        # wrapper.__name__ = func.__name__
+        # wrapper.__doc__ = func.__doc__
+        return decorator.decorate(f, load_wrapper)
+
+    if func is None:
+        return decorator_printer
+    else:
+        return decorator_printer(func)
+
 
 @print_vars
 def mms_load_fgm(trange=['2015-10-16', '2015-10-17'], probe='1', data_rate='srvy',
